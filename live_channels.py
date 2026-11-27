@@ -29,7 +29,7 @@ OUT = os.path.join(HERE, "live.json")
 # Category slug -> (Persian name, order on the tab). Unknown categories are left out of the tab
 # but their channels still appear under "all".
 CATEGORIES = {
-    "iran": ("ایران", 1),
+    "iran": ("صدا و سیما", 1),
     "persian": ("فارسی", 2),
     "persian-news": ("خبر", 3),
     "persian-movie-channel": ("فیلم و سریال", 4),
@@ -38,9 +38,14 @@ CATEGORIES = {
     "varzeshi": ("ورزش", 7),
     "persiana-media-group": ("پرشیانا", 8),
     "irib-ostani": ("استانی", 9),
-    "mazhabi": ("مذهبی", 10),
     "afghanistan": ("افغانستان", 11),
 }
+
+# Religious channels are left out of the app entirely (owner's decision, 2026-11-27): every channel
+# the site files under these categories, and these channels it files elsewhere (matched by slug or
+# by a word of their name, so copies under other pages go too).
+EXCLUDE_CATEGORIES = ("mazhabi",)
+EXCLUDE_WORDS = ("kalemeh", "hozoor", "hozour")
 
 # Persian names for the channels people know by them; the key is the name the site uses, lower-case
 # with spaces, so one entry covers every copy of a channel the site lists under different pages.
@@ -126,6 +131,17 @@ def works(url):
 def main():
     channels = channel_cards(get(f"{SITE}/live-tv.html"))
     print(f"{len(channels)} channels listed")
+    excluded = set()
+    for cat in EXCLUDE_CATEGORIES:
+        try:
+            excluded.update(channel_cards(get(f"{SITE}/live-tv/category/{cat}.html")))
+        except Exception as e:
+            print(f"category {cat}: {e}", file=sys.stderr)
+    for slug, ch in list(channels.items()):
+        key = (slug + " " + ch["name"]).lower()
+        if slug in excluded or any(w in key for w in EXCLUDE_WORDS):
+            del channels[slug]
+            print(f"  left out (religious): {ch['name']}")
     for cat in CATEGORIES:
         try:
             for slug in channel_cards(get(f"{SITE}/live-tv/category/{cat}.html")):
