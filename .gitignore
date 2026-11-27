@@ -1,3 +1,4 @@
 fill.log
 *.tmp
 __pycache__/
+live.log

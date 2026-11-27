@@ -2,7 +2,8 @@ name: Build catalogue
 
 # Every hour: read what is new or edited on farsiland.com and rewrite catalog.json, which the
 # «شبکه نمایش خانگی» TV app reads instead of asking the site itself. Once a day the whole
-# catalogue is read again so deleted titles drop out. Commits only when something changed.
+# catalogue is read again so deleted titles drop out. Also checks which live TV channels are playing
+# (live.json). Commits only when something changed.
 # This repository is public, so its Actions minutes are free.
 on:
   schedule:
@@ -30,9 +31,13 @@ jobs:
       - name: Build
         run: python3 -u build_feed.py --fa-budget "${{ inputs.fa_budget || '300' }}"
 
+      - name: Live TV channels
+        # Which livefarsi.com channels are playing now; a failure here keeps the last live.json.
+        run: python3 -u live_channels.py || echo "::warning::live channel check failed"
+
       - name: Commit if changed
         run: |
-          git add catalog.json state.json
+          git add catalog.json state.json live.json
           if git diff --cached --quiet; then echo "No change"; exit 0; fi
           git -c user.name="catalogue bot" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \

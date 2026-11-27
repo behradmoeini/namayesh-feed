@@ -56,3 +56,16 @@ python3 build_feed.py                 # what the hourly run does
 python3 build_feed.py --full          # read the whole catalogue now
 python3 build_feed.py --fa-budget 0   # no title pages
 ```
+
+## live.json (Live TV)
+
+`live_channels.py` reads livefarsi.com (by agreement with its owner): the channel list, the
+categories, and each channel's page for its HLS stream, then checks that each stream answers with a
+playlist. Only channels that work go into `live.json`, so the app's Live tab never lists a dead
+channel. Well-known channels get their Persian names, and copies of one channel are merged into one
+entry whose extra streams are backups. Runs every hour with the catalogue; if fewer than 10 channels
+work (a bad hour on the site), the last good file is kept.
+
+```
+{"v":1, "site":..., "categories":[{"id","name"}], "channels":[{"slug","name","logo","cats","urls"}], "checked":...}
+```
