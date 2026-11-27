@@ -1,0 +1,40 @@
+name: Build catalogue
+
+# Every hour: read what is new or edited on farsiland.com and rewrite catalog.json, which the
+# «شبکه نمایش خانگی» TV app reads instead of asking the site itself. Once a day the whole
+# catalogue is read again so deleted titles drop out. Commits only when something changed.
+# This repository is public, so its Actions minutes are free.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      fa_budget:
+        description: Most title pages to read for Persian names (each takes 1-3 s)
+        default: '300'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-catalogue
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: python3 -u build_feed.py --fa-budget "${{ inputs.fa_budget || '300' }}"
+
+      - name: Commit if changed
+        run: |
+          git add catalog.json state.json
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git -c user.name="catalogue bot" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Catalogue $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q
